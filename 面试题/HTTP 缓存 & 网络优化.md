@@ -3,22 +3,93 @@
 ### 1. 强缓存与协商缓存的区别 🔥
 
 **一句话回答**
-强缓存直接使用本地缓存，协商缓存需向服务器确认资源是否更新。
+ 强缓存直接使用本地缓存，协商缓存需向服务器确认资源是否更新。
+
+------
 
 **要点**
 
-- 强缓存：Cache-Control / Expires。
-- 协商缓存：ETag / Last-Modified。
-- 强缓存不发请求，协商缓存发请求但可能 304。
+- **强缓存**：`Cache-Control / Expires`。
+- **协商缓存**：`ETag / Last-Modified`。
+- **强缓存不发请求**，协商缓存发请求但可能返回 `304 Not Modified`。
+
+------
 
 **详细回答**
 
-- 强缓存命中时，浏览器直接使用缓存文件，状态码 200(from disk/memory cache)。
-- 协商缓存命中时，浏览器请求服务端，若资源未变更返回 304 Not Modified。
+- **强缓存**
+
+  - 浏览器在缓存有效期内直接使用本地副本，不会发请求。
+
+  - 响应状态码：`200 (from disk cache)` 或 `200 (from memory cache)`。
+
+  - 示例：
+
+    ```http
+    Cache-Control: max-age=3600
+    Expires: Wed, 21 Oct 2025 07:28:00 GMT
+    ```
+
+- **协商缓存**
+
+  - 浏览器会请求服务器，带上条件头：
+
+    - `If-None-Match`（配合 `ETag`）。
+    - `If-Modified-Since`（配合 `Last-Modified`）。
+
+  - 资源未变更时返回 `304`，否则返回新资源。
+
+  - 示例：
+
+    ```http
+    ETag: "abc123"
+    Last-Modified: Wed, 21 Oct 2025 07:28:00 GMT
+    ```
+
+------
 
 **扩展/对比**
 
-- 面试官可能问：“为什么优先用 Cache-Control 而不是 Expires？” 👉 Cache-Control 更精确，支持秒级控制且不会受客户端时间影响。
+- 为什么优先用 `Cache-Control` 而不是 `Expires`？
+   👉 `Expires` 依赖客户端时间，可能因本地时钟错误而失效；`Cache-Control` 精确到秒级，更现代。
+- `ETag` vs `Last-Modified`：
+  - `ETag` 更精确（字节级），但计算和存储成本更高。
+  - `Last-Modified` 精度较低（秒级），且内容不变但时间更新也会触发更新。
+
+------
+
+**优化案例**
+
+1. **静态资源（JS/CSS/图片）**
+
+   - 使用强缓存 + 文件指纹（hash 命名）。
+
+   - 示例：`app.abc123.js`。
+
+   - 服务端配置：
+
+     ```http
+     Cache-Control: max-age=31536000, immutable
+     ```
+
+2. **HTML 页面**
+
+   - HTML 更新频繁，避免长缓存。
+
+   - 常见做法：
+
+     ```http
+     Cache-Control: no-cache
+     ETag: "xyz789"
+     ```
+
+   - 浏览器每次请求都会询问服务端，但未变更时只返回 `304`。
+
+3. **混合策略（推荐）**
+
+   - 静态资源走强缓存（长缓存 + hash）。
+   - 动态资源走协商缓存（`ETag/Last-Modified`）。
+   - 既保证性能，又能保证内容实时更新。
 
 ---
 
@@ -167,23 +238,51 @@ HTTP/3 基于 QUIC（UDP），支持更快的连接建立和更优的多路复�
 ### 8. 前端性能指标（Core Web Vitals） 🔥
 
 **一句话回答**
-Core Web Vitals 是 Google 提出的网页体验指标，包括 LCP、FID、CLS。
+ Core Web Vitals 是 Google 提出的网页体验核心指标，包括 **LCP（最大内容绘制）**、**FID（首次输入延迟）**、**CLS（累计布局偏移）**。
+
+------
 
 **要点**
 
-- LCP（最大内容绘制）。
-- FID（首次输入延迟）。
-- CLS（累计布局偏移）。
+- **LCP（Largest Contentful Paint）**：衡量页面主要内容渲染速度，目标 < 2.5s
+- **FID（First Input Delay）**：衡量用户首次交互响应速度，目标 < 100ms
+- **CLS（Cumulative Layout Shift）**：衡量页面布局稳定性，目标 < 0.1
+
+------
 
 **详细回答**
 
-- LCP 衡量页面主要内容渲染速度。
-- FID 衡量用户首次交互响应速度。
-- CLS 衡量页面抖动情况。
+- **LCP**
+  - 衡量用户视窗中最大可见内容（图片、视频、标题等）的渲染完成时间。
+  - **常见问题**：图片过大未压缩、阻塞式 CSS/JS、Web 字体加载慢。
+  - **优化方法**：
+    - 使用图片懒加载（`loading="lazy"`）、WebP/AVIF 压缩。
+    - 内联关键 CSS，推迟非关键资源加载。
+    - 使用 CDN 加速静态资源。
+- **FID**
+  - 衡量用户首次与页面交互（点击、输入等）到事件处理程序被触发的延迟。
+  - **常见问题**：主线程长任务阻塞、大体积 JS Bundle。
+  - **优化方法**：
+    - 代码分割（Code Splitting）、懒加载非关键脚本。
+    - 将长任务切分为小任务，使用 `requestIdleCallback` 或 `setTimeout`。
+    - 使用 Web Worker 将复杂计算移出主线程。
+- **CLS**
+  - 衡量页面元素在渲染过程中是否发生意外的视觉偏移。
+  - **常见问题**：图片/广告/iframe 无尺寸预留，字体闪烁（FOIT/FOUT），动态插入 DOM 未固定布局。
+  - **优化方法**：
+    - 所有图片/视频指定 `width` 和 `height` 或使用 CSS `aspect-ratio`。
+    - 为广告位、懒加载区域预留固定尺寸占位。
+    - 使用 `font-display: swap` 减少字体加载抖动。
+    - 避免在已有内容上方插入新节点，尽量追加在下方。
+
+------
 
 **扩展/对比**
 
-- 面试官可能问：“如何优化 CLS？” 👉 预留图片/广告位大小。
+- 面试官常问：
+  - “如何优化 **CLS**？” 👉 预留图片/广告位大小，避免布局突变。
+  - “FID 和 TBT 的区别？” 👉 FID 是真实用户交互延迟，TBT（Total Blocking Time）是实验室指标，用于反映主线程阻塞时间。
+  - “LCP 和 FMP/FCP 的区别？” 👉 FCP（首次内容绘制）只是“有东西出现”，LCP 是“主要内容出现”，更接近真实体验。
 
 ---
 
