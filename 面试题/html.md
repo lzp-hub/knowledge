@@ -263,26 +263,81 @@ HTML5 表单大幅增强：
 
 ---
 
-### 13. 如何提升页面可访问性（A11y）
+### 13. 如何提升页面可访问性（A11y） 🔥
 
 **一句话回答**
 通过语义化标签、aria 属性、tabIndex、label 关联提升无障碍体验。
 
 **要点**
 
-- aria-label / aria-hidden。
-- tabIndex 控制键盘焦点。
-- label 与 input 绑定。
+- 使用语义化标签：`<nav>`、`<main>`、`<header>`、`<footer>`。
+- ARIA 属性：`aria-label`、`aria-hidden`、`role`。
+- 键盘可达性：`tabIndex`、`Enter`/`Space` 触发事件。
+- 表单可用性：`<label for="id">` 与 `<input id="id">` 绑定。
 
 **详细回答**
 
-- 用 `<nav>`、`<main>` 帮助读屏器识别区域。
-- 用 aria-\* 描述非语义元素。
-- 保证交互元素能通过键盘访问。
+- **语义化结构**：使用正确的 HTML 标签帮助读屏器识别页面区域，例如 `<main>` 告诉用户“这是主要内容”。
+- **ARIA 属性**：对非语义元素（如自定义按钮 `<div role="button">`）补充信息，提升可读性。
+  - `aria-label="关闭弹窗"` 给图标按钮增加描述。
+  - `aria-hidden="true"` 隐藏对读屏器无意义的装饰性元素。
+- **键盘无障碍**：所有交互元素（按钮、链接、表单）应能通过 `Tab` 导航，避免 `onclick` 只绑定鼠标事件。
+- **表单增强**：确保输入框有 `<label>` 绑定或 `aria-label`，帮助屏幕阅读器播报。
 
 **扩展/对比**
 
-- 面试官常问：aria-hidden 有什么作用？👉 隐藏元素对读屏器不可见。
+- **常见问题**：面试官可能会问
+  - “`aria-hidden` 有什么作用？” 👉 它会让元素对读屏器不可见，但视觉上依然存在。
+  - “为什么要用语义化标签而不是一堆 `<div>`？” 👉 因为 `<div>` 对读屏器无意义，而 `<nav>`、`<main>` 能提供结构信息。
+
+**优化案例**
+
+- **按钮可访问性**
+
+  ```html
+  <!-- 错误：div 没有语义 -->
+  <div onclick="submitForm()">提交</div>
+
+  <!-- 正确：button 自带语义和键盘支持 -->
+  <button type="submit">提交</button>
+  ```
+
+- **图标按钮描述**
+
+  ```html
+  <!-- 错误：屏幕阅读器只会播报“按钮” -->
+  <button><i class="icon-close"></i></button>
+
+  <!-- 正确：aria-label 增加可读性 -->
+  <button aria-label="关闭弹窗">
+    <i class="icon-close" aria-hidden="true"></i>
+  </button>
+  ```
+
+- **表单关联**
+
+  ```html
+  <!-- 推荐 label+for 绑定 -->
+  <label for="email">邮箱</label>
+  <input id="email" type="email" required />
+  ```
+
+**补充**
+
+A11y（ Accessibility 这个单词比较长，中间有 11 个字母）指的是让网页或应用能够被 **所有人** 使用，包括：
+
+- 使用读屏器的视障用户
+- 不能用鼠标、依赖键盘或语音操作的用户
+- 有色盲、色弱的人群
+- 使用不同设备（手机、平板、屏幕阅读器等）的用户
+
+ARIA 属性是 **标准化的 HTML 扩展属性**，用来提升 **无障碍（Accessibility, A11y）**
+
+- 所有 ARIA 属性都以 `aria-` 前缀开头，例如：
+  - `aria-label`（为元素提供无障碍名称）
+  - `aria-hidden`（告诉读屏器忽略元素）
+  - `aria-expanded`（表示折叠/展开状态）
+  - `aria-checked`（表示勾选状态）
 
 ---
 
@@ -311,29 +366,98 @@ canvas 基于像素，性能好但放大失真；svg 基于 XML，节点可操�
 ### 15. 图片优化（picture / srcset / lazy） 🔥
 
 **一句话回答**
-picture/srcset 提供响应式图片，lazy 属性可延迟加载。
+`<picture>` / `srcset` 用于响应式图片，`loading="lazy"` 可以延迟加载，减少带宽和首屏压力。
+
+---
 
 **要点**
 
-- srcset：不同分辨率/尺寸。
-- picture：根据媒体条件选择资源。
-- loading="lazy"：懒加载。
+- **srcset**：同一图片资源的多版本，浏览器根据屏幕分辨率 / 设备宽度选择合适的。
+- **sizes**：配合 srcset 告诉浏览器“在不同视口下应该用多大尺寸的图片”。
+- **picture**：可根据媒体条件（屏幕宽度、格式支持度）选择不同资源。
+- **lazy loading**：`loading="lazy"` 延迟加载非首屏图片，减少阻塞。
+- **现代优化**：WebP/AVIF 替代 JPEG/PNG，进一步减少体积。
 
-**代码示例**
+---
+
+**详细回答**
+
+1. **srcset + sizes 响应式加载**
+
+```html
+<img
+  src="default.jpg"
+  srcset="small.jpg 480w, medium.jpg 800w, large.jpg 1200w"
+  sizes="(max-width: 600px) 480px, (max-width: 1000px) 800px, 1200px"
+  alt="demo"
+/>
+```
+
+浏览器会根据设备宽度，自动选择合适的资源，避免小屏加载大图。
+
+---
+
+1. **picture 更灵活的场景**
 
 ```html
 <picture>
-  <source media="(max-width:600px)" srcset="small.jpg" />
-  <img src="large.jpg" alt="demo" loading="lazy" />
+  <!-- 优先使用 AVIF 格式 -->
+  <source type="image/avif" srcset="image.avif" />
+  <!-- 退化到 WebP -->
+  <source type="image/webp" srcset="image.webp" />
+  <!-- 再退化到 JPEG -->
+  <img src="image.jpg" alt="demo" loading="lazy" />
 </picture>
 ```
 
-**详细回答**
-响应式图片能减少带宽浪费并提升清晰度。
+- 好处：按格式优先级加载最佳图片（现代浏览器用 AVIF，老浏览器用 JPG）。
+- 实用场景：电商商品图、门户 banner。
+
+---
+
+1. **懒加载**
+
+```html
+<img src="product.jpg" alt="商品" loading="lazy" />
+```
+
+- Chrome/Firefox/Safari 已原生支持。
+- 对首屏外图片非常有效，减少初始流量。
+
+---
 
 **扩展/对比**
 
-- 面试官常问：如何优化图片加载？👉 响应式 + 懒加载。
+- 面试官可能会问：
+  - **“如何优化电商网站的商品图片加载？”**
+    👉 使用 `srcset + lazy`，首屏用低清晰度预览图（LQIP/Blur-up），滚动到可视区域时加载高清图。
+  - **“CDN 图片优化能做什么？”**
+    👉 动态裁剪、格式转换（自动返回 WebP/AVIF）、加缓存。
+
+---
+
+**优化案例**
+
+1. **低清晰度占位图（LQIP/Blur-up）**
+   - 在图片还没加载完之前先显示一张模糊小图，避免白屏抖动。
+   - 常见于 Next.js 的 `<Image>` 组件 (`placeholder="blur"`)。
+2. **骨架屏/渐进加载**
+   - 给大图留出占位框架（防止 CLS），加载完成后替换。
+3. **压缩与格式**
+   - 使用 `imagemin` 或 CDN 压缩。
+   - WebP/AVIF 体积小，清晰度高，推荐优先加载。
+4. **缓存与 CDN**
+   - 静态资源配置长缓存（如 `Cache-Control: max-age=31536000`）。
+   - 图片分发走 CDN，降低延迟。
+
+---
+
+👉 总结：
+**图片优化就是三个层面：**
+
+- **加载策略**（响应式 + 懒加载 + 低清晰度占位）。
+- **格式优化**（WebP/AVIF）。
+- **传输优化**（CDN 缓存）。
 
 ---
 
@@ -361,8 +485,6 @@ Web Components 提供了封装与复用原生组件的标准，包括 Shadow DOM
 
 ---
 
-# 五、存储与通信
-
 ### 17. localStorage / sessionStorage / cookie / IndexedDB 🔥
 
 **一句话回答**
@@ -370,56 +492,71 @@ localStorage 持久化，sessionStorage 会话级，cookie 小且随请求发送
 
 **要点**
 
-- localStorage：5-10MB，长期。
-- sessionStorage：窗口级，关闭即失效。
-- cookie：4KB，随请求发送。
-- IndexedDB：大规模存储。
+- **localStorage**：容量 5–10MB，长期存储，除非手动清理。
+- **sessionStorage**：作用于当前标签页，会话结束即清空。
+- **cookie**：容量约 4KB，随每次请求携带，常用于会话管理。
+- **IndexedDB**：浏览器原生数据库，支持大规模结构化存储。
 
 **详细回答**
-cookie 更适合鉴权；localStorage 适合缓存配置；IndexedDB 适合离线应用。
+
+- cookie 更适合鉴权（尤其是 httpOnly + Secure 的 session cookie）。
+- localStorage 常用于保存用户偏好、前端缓存。
+- sessionStorage 适合存临时状态，如表单填写进度。
+- IndexedDB 能存储离线应用数据（如 PWA、文件缓存）。
 
 **扩展/对比**
 
-- token 存储安全性问题常被问：httpOnly cookie 更安全。
+- 面试官常问：**“token 放 localStorage 还是 cookie？”**
+  👉 httpOnly cookie 更安全，能防御 XSS 盗取。
 
 ---
 
 ### 18. `<iframe>` 的作用与安全问题 🔥
 
 **一句话回答**
-iframe 用于嵌套页面，但可能带来性能和安全问题。
+iframe 用于嵌套页面，但可能带来性能和安全风险。
 
 **要点**
 
-- sandbox 属性。
-- 同源策略限制。
-- 性能开销大。
+- **sandbox 属性**：限制脚本、表单、插件。
+- **同源策略**：限制跨域访问。
+- **性能问题**：加载慢、阻塞渲染。
 
 **详细回答**
-iframe 常用于广告、第三方内容。sandbox 可限制脚本执行、表单提交。
+
+- iframe 常用于广告、第三方组件、支付页面。
+- sandbox 可配置：`sandbox="allow-scripts allow-same-origin"` 等。
+- iframe 跨域通信依赖 `postMessage`。
 
 **扩展/对比**
 
-- 跨域通信需 postMessage。
+- 现代微前端方案（qiankun、Module Federation）常用 iframe/postMessage 实现隔离与通信。
 
 ---
 
-### 19. postMessage 的作用
+### 19. postMessage 的作用 🔥
 
 **一句话回答**
 postMessage 用于跨窗口/跨 iframe 安全通信。
 
 **要点**
 
-- window\.postMessage。
-- 指定 origin。
+- `window.postMessage(message, targetOrigin)`。
+- 必须指定 `origin`，避免被恶意站点接收。
+- 监听：`window.addEventListener("message", handler)`。
 
 **详细回答**
-允许不同源的文档安全交换消息，常用于 iframe 或多窗口通信。
+允许不同源的页面安全交换数据，绕过同源策略。
+典型应用：
+
+- 主页面与 iframe 交互（如支付页面、第三方登录）。
+- 多标签页共享状态。
+- 微前端框架内部通信。
 
 **扩展/对比**
 
-- React/Vue 项目中可用于微前端通信。
+- 面试官可能问：**“如何实现跨域 iframe 通信？”**
+  👉 答：postMessage。
 
 ---
 
