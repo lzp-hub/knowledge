@@ -8,9 +8,9 @@ TS 在 JS 基础上增加了静态类型系统，包括 `any`、`unknown`、`nev
 **要点**
 
 - 基本：string、number、boolean、null、undefined。
-- 特殊：any、unknown、never、void。
-- 引用：object、array、tuple、enum。
-- 高级：泛型、联合、交叉、字面量。
+- 特殊：**any、unknown、never、void。**
+- 引用：object、array、**tuple、enum**。
+- **高级：泛型、联合、交叉、字面量。**
 
 **详细回答**
 
@@ -176,9 +176,211 @@ type UserPreview = Pick<User, "id" | "name">;
 type UserOptional = Partial<User>;
 ```
 
-**扩展/对比**
+#### 1. `Partial<T>`
 
-- 面试官可能让你手写实现 Partial。
+**作用**：将所有属性变为可选
+
+```ts
+type Partial<T> = {
+  [P in keyof T]?: T[P];
+};
+
+interface User {
+  id: number;
+  name: string;
+  age: number;
+}
+
+type UserOptional = Partial<User>;
+/* 等价于：
+type UserOptional = {
+  id?: number;
+  name?: string;
+  age?: number;
+}
+*/
+```
+
+------
+
+#### 2. `Required<T>`
+
+**作用**：将所有属性变为必填
+
+```ts
+type Required<T> = {
+  [P in keyof T]-?: T[P];
+};
+// -? 是 “移除可选” 的操作，常用于把所有属性从 可选 变成 必选
+
+type UserRequired = Required<Partial<User>>;
+/* 等价于：
+type UserRequired = {
+  id: number;
+  name: string;
+  age: number;
+}
+*/
+```
+
+------
+
+#### 3. `Readonly<T>`
+
+**作用**：所有属性只读
+
+```ts
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P];
+};
+
+type UserReadonly = Readonly<User>;
+/* 等价于：
+type UserReadonly = {
+  readonly id: number;
+  readonly name: string;
+  readonly age: number;
+}
+*/
+```
+
+------
+
+#### 4. `Pick<T, K>`
+
+**作用**：从类型 `T` 中选择部分属性
+
+```ts
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P];
+};
+
+type UserPreview = Pick<User, "id" | "name">;
+/* 等价于：
+type UserPreview = {
+  id: number;
+  name: string;
+}
+*/
+```
+
+------
+
+#### 5. `Omit<T, K>`
+
+**作用**：从类型 `T` 中排除部分属性
+
+```ts
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+
+type UserWithoutAge = Omit<User, "age">;
+/* 等价于：
+type UserWithoutAge = {
+  id: number;
+  name: string;
+}
+*/
+```
+
+------
+
+#### 6. `Record<K, T>`
+
+**作用**：构造一个对象类型，键为 `K`，值为 `T`
+
+```ts
+type Record<K extends keyof any, T> = {
+  [P in K]: T;
+};
+
+type Role = "admin" | "user";
+type Permissions = Record<Role, boolean>;
+/* 等价于：
+type Permissions = {
+  admin: boolean;
+  user: boolean;
+}
+*/
+```
+
+------
+
+#### 7. `Exclude<T, U>`
+
+**作用**：从 `T` 中排除可以赋值给 `U` 的类型
+
+```ts
+type Exclude<T, U> = T extends U ? never : T;
+
+type T1 = Exclude<"a" | "b" | "c", "a">; // "b" | "c"
+```
+
+------
+
+#### 8. `Extract<T, U>`
+
+**作用**：从 `T` 中提取可以赋值给 `U` 的类型
+
+```ts
+type Extract<T, U> = T extends U ? T : never;
+
+type T2 = Extract<"a" | "b" | "c", "a" | "f">; // "a"
+```
+
+------
+
+#### 9. `NonNullable<T>`
+
+**作用**：排除 `null` 和 `undefined`
+
+```ts
+type NonNullable<T> = T extends null | undefined ? never : T;
+
+type T3 = NonNullable<string | null | undefined>; // string
+```
+
+------
+
+#### 10. `ReturnType<T>`
+
+**作用**：获取函数的返回值类型
+
+```ts
+type ReturnType<T extends (...args: any) => any> = 
+  T extends (...args: any) => infer R ? R : any;
+
+function getUser() {
+  return { id: 1, name: "Tom" };
+}
+type UserType = ReturnType<typeof getUser>; // { id: number; name: string }
+```
+
+------
+
+#### 11. `Parameters<T>`
+
+**作用**：获取函数参数类型元组
+
+```ts
+type Parameters<T extends (...args: any) => any> = 
+  T extends (...args: infer P) => any ? P : never;
+
+function sum(a: number, b: string) {
+  return a + b;
+}
+type Params = Parameters<typeof sum>; // [number, string]
+```
+
+#### 2. `valueof`（自定义实现）
+
+其实就是把 **`T[keyof T]`** 取出来：
+
+```ts
+type ValueOf<T> = T[keyof T];
+
+type UserValues = ValueOf<User>;
+// number | string
+```
 
 ---
 
